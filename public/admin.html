@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>Admin | Kibet MTN</title>
+<style>
+ body{font-family:Arial,sans-serif;background:#f5f6f8;margin:0;color:#222}
+ header{background:#111;color:#fff;padding:14px 5%;display:flex;justify-content:space-between;align-items:center}
+ header b span{color:#ffcc00} main{padding:24px 5%} .card{background:#fff;border-radius:10px;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+ table{border-collapse:collapse;width:100%;font-size:14px} th,td{padding:10px 8px;border-bottom:1px solid #eee;text-align:left;vertical-align:top}
+ th{background:#fafafa} .tag{padding:3px 9px;border-radius:12px;font-size:12px;font-weight:700}
+ .pending{background:#fff3cd}.approved{background:#d4edda}.rejected{background:#f8d7da}
+ input,select,button{padding:8px;border:1px solid #ccc;border-radius:6px;font-size:14px} button{cursor:pointer;background:#ffcc00;border-color:#ffcc00;font-weight:700}
+ .login{max-width:360px;margin:80px auto} .login input{width:100%;box-sizing:border-box;margin-bottom:10px}
+ .filters button{background:none;border:0;color:#111;margin-right:10px;padding:4px} .filters button.on{text-decoration:underline}
+ .err{color:#b00020;margin-bottom:10px} .scroll{overflow-x:auto} .dec{display:flex;gap:6px;flex-wrap:wrap} .hidden{display:none}
+</style></head><body>
+
+<div class="login card" id="loginBox">
+  <h2>Admin login</h2>
+  <div class="err" id="loginErr"></div>
+  <form id="loginForm">
+    <input id="user" placeholder="Username" autocomplete="username" required>
+    <input id="pass" type="password" placeholder="Password" autocomplete="current-password" required>
+    <button>Sign in</button>
+  </form>
+</div>
+
+<div id="app" class="hidden">
+  <header><b>Kibet<span>MTN</span> Admin</b><button id="logout">Log out</button></header>
+  <main>
+    <div class="card" style="margin-bottom:16px"><div class="filters" id="filters"></div></div>
+    <div class="card scroll">
+      <table>
+        <thead><tr><th>Ref</th><th>Applicant</th><th>Loan</th><th>Income</th><th>Status</th><th>Decision</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => { const d = document.createElement('div'); d.textContent = String(s ?? ''); return d.innerHTML; };
+const money = (n) => '$' + Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+let filter = '';
+
+async function api(path, method = 'GET', body) {
+  const res = await fetch('/api/admin/' + path, {
+    method, credentials: 'same-origin',
+    headers: body ? { 'Content-Type': 'application/json' } : {},
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  let data = {}; try { data = await res.json(); } catch {}
+  return { status: res.status, ...data };
+}
+
+function show(loggedIn) {
+  $('loginBox').classList.toggle('hidden', loggedIn);
+  $('app').classList.toggle('hidden', !loggedIn);
+}
+
+async function load() {
+  const r = await api('list?filter=' + encodeURIComponent(filter));
+  if (r.status === 401) return show(false);
+  show(true);
+  const c = r.counts;
+  $('filters').innerHTML = [['', 'All'], ['pending', 'Pending (' + c.pending + ')'], ['approved', 'Approved (' + c.approved + ')'], ['rejected', 'Rejected (' + c.rejected + ')']]
+    .map(([k, label]) => '<button data-f="' + k + '" class="' + (k === filter ? 'on' : '') + '">' + esc(label) + '</button>').join('');
+  $('rows').innerHTML = r.applications.length ? r.applications.map((a) =>
+    '<tr><td>' + esc(a.reference) + '<br><small>' + esc(a.created_at) + '</small></td>' +
+    '<td><b>' + esc(a.full_name) + '</b><br>' + esc(a.phone) + '<br>' + esc(a.email) + '<br>' + esc(a.country) + ', age ' + esc(a.age) + '</td>' +
+    '<td>' + money(a.amount) + ' / ' + esc(a.months) + ' mo<br><small>' + money(a.monthly_payment) + '/mo, total ' + money(a.total_repayable) + '</small></td>' +
+    '<td>' + money(a.monthly_income) + '<br><small>' + esc(a.employment) + '</small></td>' +
+    '<td><span class="tag ' + esc(a.status) + '">' + esc(a.status[0].toUpperCase() + a.status.slice(1)) + '</span></td>' +
+    '<td><div class="dec" data-ref="' + esc(a.reference) + '"><select>' +
+      ['pending', 'approved', 'rejected'].map((s) => '<option value="' + s + '"' + (a.status === s ? ' selected' : '') + '>' + s[0].toUpperCase() + s.slice(1) + '</option>').join('') +
+    '</select><input maxlength="255" placeholder="Note shown to applicant" value="' + esc(a.decision_note) + '"><button>Save</button></div></td></tr>'
+  ).join('') : '<tr><td colspan="6" style="text-align:center;color:#777;padding:30px">No applications yet.</td></tr>';
+}
+
+$('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const r = await api('login', 'POST', { user: $('user').value, pass: $('pass').value });
+  if (r.ok) { $('pass').value = ''; $('loginErr').textContent = ''; load(); }
+  else $('loginErr').textContent = r.error || 'Login failed.';
+});
+$('logout').addEventListener('click', async () => { await api('logout', 'POST', {}); show(false); });
+$('filters').addEventListener('click', (e) => { if (e.target.dataset.f !== undefined) { filter = e.target.dataset.f; load(); } });
+$('rows').addEventListener('click', async (e) => {
+  if (e.target.tagName !== 'BUTTON') return;
+  const box = e.target.closest('.dec');
+  const r = await api('decide', 'POST', { reference: box.dataset.ref, status: box.querySelector('select').value, note: box.querySelector('input').value });
+  if (r.ok) load(); else alert(r.error || 'Could not save.');
+});
+load();
+</script>
+</body></html>

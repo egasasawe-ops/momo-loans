@@ -1,0 +1,13 @@
+{
+  "name": "kibet-mtn",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "netlify dev",
+    "test": "node test/run.mjs",
+    "hash": "node scripts/hash-password.mjs"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": { "@netlify/blobs": "^8.1.0" }
+}

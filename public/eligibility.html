@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="assets/style.css"><link rel="stylesheet" href="assets/app.css">
+<title>Check Eligibility &amp; Apply | Kibet MTN</title>
+</head><body>
+<header class="navbar">
+  <a href="index.html" class="logo"><span>Kibet<span class="yellow">MTN</span></span></a>
+  <div class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></div>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="index.html#home">Home</a></li>
+    <li><a href="index.html#calculator">Loan Calculator</a></li>
+    <li><a href="status.html">Track Application</a></li>
+    <li><a href="eligibility.html" class="nav-apply">Apply Now</a></li>
+  </ul>
+</header>
+<section class="page-head">
+  <h1>Check Eligibility <span>&amp; Apply</span></h1>
+  <p>Find out in seconds whether you qualify, then submit your application.</p>
+</section>
+
+<div class="form-wrap"><div class="form-card">
+  <div class="notice"><b>Stay safe:</b> we will never ask for your MoMo PIN, OTP, password or any upfront fee to release a loan. Do not share these with anyone.</div>
+
+  <form id="appForm" novalidate>
+    <div class="grid2">
+      <div><label for="full_name">Full name</label><input id="full_name" name="full_name" autocomplete="name" required></div>
+      <div><label for="phone">Phone number</label><input id="phone" name="phone" type="tel" placeholder="+256700000000" autocomplete="tel" required></div>
+      <div><label for="email">Email (optional)</label><input id="email" name="email" type="email" autocomplete="email"></div>
+      <div><label for="country">Country</label>
+        <select id="country" name="country" required>
+          <option value="">Select country</option>
+          <option>Ghana</option><option>Uganda</option><option>Zambia</option><option>Cameroon</option>
+          <option>Côte d'Ivoire</option><option>Guinea</option><option>Benin</option><option>South Sudan</option>
+        </select></div>
+      <div><label for="age">Age</label><input id="age" name="age" type="number" min="18" max="70" required></div>
+      <div><label for="employment">Employment status</label>
+        <select id="employment" name="employment" required>
+          <option value="">Select</option><option>Employed</option><option>Self-employed</option>
+          <option>Business owner</option><option>Student</option><option>Unemployed</option>
+        </select></div>
+      <div><label for="monthly_income">Monthly income (USD)</label><input id="monthly_income" name="monthly_income" type="number" min="0" step="0.01" required></div>
+      <div><label for="amount">Loan amount (USD)</label><input id="amount" name="amount" type="number" min="50" max="5000" step="1" value="500" required></div>
+      <div><label for="months">Repayment period</label>
+        <select id="months" name="months">
+          <option value="1">1 Month</option><option value="3">3 Months</option>
+          <option value="6" selected>6 Months</option><option value="12">12 Months</option>
+        </select></div>
+    </div>
+
+    <div class="hp" aria-hidden="true"><label>Website<input name="website" tabindex="-1" autocomplete="off"></label></div>
+
+    <label class="check"><input type="checkbox" id="consent" name="consent">
+      <span>I confirm the details above are true and I agree that Kibet MTN may store them to assess my application.</span></label>
+
+    <div class="actions">
+      <button type="button" class="btn btn-dark" id="checkBtn">Check eligibility</button>
+      <button type="submit" class="btn btn-primary" id="applyBtn" disabled>Submit application</button>
+    </div>
+  </form>
+
+  <div class="box" id="result" role="status" aria-live="polite"></div>
+</div></div>
+
+<div class="mini-footer">&copy; 2026 Kibet MTN. All rights reserved. &middot; <a href="index.html">Back to home</a></div>
+<script src="assets/app.js"></script>
+<script>
+const form = document.getElementById('appForm'), box = document.getElementById('result');
+const checkBtn = document.getElementById('checkBtn'), applyBtn = document.getElementById('applyBtn');
+
+const payload = () => Object.fromEntries(new FormData(form).entries());
+
+// Any edit invalidates the previous check
+form.addEventListener('input', () => { applyBtn.disabled = true; });
+
+checkBtn.addEventListener('click', async () => {
+  checkBtn.disabled = true;
+  const r = await postJSON('/api/eligibility', payload());
+  checkBtn.disabled = false;
+  if (!r.ok) {
+    const list = (r.errors || [r.error || 'Something went wrong.']).map(e => '<li>' + esc(e) + '</li>').join('');
+    return showBox(box, 'bad', '<b>Please fix the following:</b><ul>' + list + '</ul>');
+  }
+  if (r.eligible) {
+    applyBtn.disabled = false;
+    showBox(box, 'ok', '<b>Good news, you appear eligible.</b><br>Estimated repayment: <b>' + money(r.monthly) +
+      '</b> per month (total ' + money(r.total) + '). This is not final approval. Submit your application to continue.');
+  } else {
+    applyBtn.disabled = true;
+    const list = r.reasons.map(e => '<li>' + esc(e) + '</li>').join('');
+    let extra = r.max_affordable > 0 ? '<br>Based on your income you could try up to about <b>' + money(r.max_affordable) + '</b>.' : '';
+    showBox(box, 'bad', '<b>Not eligible yet:</b><ul>' + list + '</ul>' + extra);
+  }
+});
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (applyBtn.disabled) return;
+  applyBtn.disabled = true;
+  const data = payload(); data.consent = document.getElementById('consent').checked;
+  const r = await postJSON('/api/apply', data);
+  if (r.ok) {
+    form.style.display = 'none';
+    showBox(box, 'ok', '<b>Application received.</b><div class="ref">' + esc(r.reference) + '</div>' +
+      'Keep this reference. Use it with your phone number on the <a href="status.html"><b>Track Application</b></a> page to see the decision.');
+  } else {
+    applyBtn.disabled = false;
+    const list = (r.errors || [r.error || 'Something went wrong.']).map(e => '<li>' + esc(e) + '</li>').join('');
+    showBox(box, 'bad', '<ul>' + list + '</ul>');
+  }
+});
+</script>
+</body></html>

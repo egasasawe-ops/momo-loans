@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="assets/style.css"><link rel="stylesheet" href="assets/app.css">
+<title>Track Application | Kibet MTN</title>
+</head><body>
+<header class="navbar">
+  <a href="index.html" class="logo"><span>Kibet<span class="yellow">MTN</span></span></a>
+  <div class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></div>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="index.html#home">Home</a></li>
+    <li><a href="index.html#calculator">Loan Calculator</a></li>
+    <li><a href="status.html">Track Application</a></li>
+    <li><a href="eligibility.html" class="nav-apply">Apply Now</a></li>
+  </ul>
+</header>
+<section class="page-head">
+  <h1>Track Your <span>Application</span></h1>
+  <p>Enter your reference number and the phone number you applied with.</p>
+</section>
+<div class="form-wrap"><div class="form-card">
+  <form id="trackForm">
+    <label for="reference">Reference number</label>
+    <input id="reference" name="reference" placeholder="KM-1A2B3C4D" required>
+    <label for="phone">Phone number</label>
+    <input id="phone" name="phone" type="tel" required>
+    <div class="actions"><button class="btn btn-primary" type="submit">Check status</button></div>
+  </form>
+  <div class="box" id="result" role="status" aria-live="polite"></div>
+</div></div>
+<div class="mini-footer">&copy; 2026 Kibet MTN. All rights reserved. &middot; <a href="index.html">Back to home</a></div>
+<script src="assets/app.js"></script>
+<script>
+const box = document.getElementById('result');
+document.getElementById('trackForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const r = await postJSON('/api/status', Object.fromEntries(new FormData(e.target).entries()));
+  if (!r.ok) return showBox(box, 'bad', esc(r.error || 'Something went wrong.'));
+  const a = r.application;
+  showBox(box, 'ok',
+    '<div class="ref">' + esc(a.reference) + '</div>' +
+    '<span class="tag ' + esc(a.status) + '">' + esc(a.status.toUpperCase()) + '</span><br><br>' +
+    'Amount: <b>' + money(a.amount) + '</b> over ' + esc(a.months) + ' month(s)<br>' +
+    'Monthly payment: <b>' + money(a.monthly_payment) + '</b><br>' +
+    'Submitted: ' + esc(a.created_at) + ' UTC' +
+    (a.decision_note ? '<br><br><b>Note:</b> ' + esc(a.decision_note) : ''));
+});
+</script>
+</body></html>

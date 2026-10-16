@@ -1,0 +1,26 @@
+.page-head{background:linear-gradient(135deg,#0b1f3a,#1d4e89 55%,#0b1f3a);color:#fff;text-align:center;padding:120px 6% 70px}
+.page-head h1{font-size:clamp(28px,4vw,42px);margin-bottom:10px}
+.page-head h1 span{color:#ffcc00}
+.page-head p{max-width:620px;margin:0 auto;opacity:.9;line-height:1.5}
+.form-wrap{max-width:760px;margin:-40px auto 60px;padding:0 5%;position:relative;z-index:5}
+.form-card{background:#fff;border-radius:12px;padding:30px;box-shadow:0 10px 35px rgba(0,0,0,.10)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-card label{display:block;font-size:14px;font-weight:700;margin:14px 0 6px}
+.form-card input,.form-card select{width:100%;padding:12px;border:1px solid #ccc;border-radius:6px;font-size:15px;background:#fff}
+.form-card input:focus,.form-card select:focus{outline:2px solid #ffcc00;border-color:#ffcc00}
+.check{display:flex;gap:10px;align-items:flex-start;margin-top:18px;font-size:14px;line-height:1.4}
+.check input{width:auto;margin-top:3px}
+.notice{background:#fff8dc;border-left:4px solid #ffcc00;padding:12px 14px;border-radius:6px;font-size:14px;line-height:1.5;margin-bottom:6px}
+.actions{display:flex;gap:12px;margin-top:22px;flex-wrap:wrap}
+.btn-dark{background:#111;color:#fff;border:0;cursor:pointer}
+.btn[disabled]{opacity:.45;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+.box{margin-top:22px;padding:16px;border-radius:8px;font-size:15px;line-height:1.5;display:none}
+.box.show{display:block}.box.ok{background:#e8f6ec;border:1px solid #9ad2a8}.box.bad{background:#fdecee;border:1px solid #f2a3ad}
+.box ul{margin:8px 0 0 18px}
+.hp{position:absolute;left:-9999px;height:0;overflow:hidden}
+.ref{font-size:26px;font-weight:800;letter-spacing:1px;margin:6px 0}
+.tag{display:inline-block;padding:4px 12px;border-radius:14px;font-weight:700;font-size:13px}
+.tag.pending{background:#fff3cd}.tag.approved{background:#d4edda}.tag.rejected{background:#f8d7da}
+.mini-footer{background:#111;color:#bbb;text-align:center;padding:24px;font-size:14px}
+.mini-footer a{color:#ffcc00}
+@media(max-width:640px){.grid2{grid-template-columns:1fr}}
